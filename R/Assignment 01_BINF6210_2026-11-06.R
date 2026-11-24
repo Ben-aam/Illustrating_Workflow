@@ -1,11 +1,17 @@
 ##***************************
-## Assignment 1
+## Collaboration - Editing and Improving Code
 ##
-## Group07_Merged_Final_File
-##
+## Original authors: 
+## Behnam Abbaszadeh Aghdam, Taya Cosby, Livpreet Kaur, Mikayla Kent
+## Modified by: Enike Grace
+## Assignmnet 2 - Software Tools(6210)
+## Assignment 2 Teammate: Behnam Abbaszadeh Aghdam
 ## 2026-11-06
 ##
-##***************************
+## Modifications: 
+## 1. Pattern-based filtering of retrotransposon classes using regular expressions.
+## 2. Introduced a reusable function for TE classification to reduce code duplication and improve consistency.
+## 3. Improved the visualization of TE composition using a grouped horizontal bar chart, making comparisons of TE family abundance across datasets easier to interpret.
 
 ## _ Packages used -------
 library(tidyverse)
@@ -28,12 +34,12 @@ theme_set(theme_light())
 
 ## code for assignment part 1 ----
 
-df_trich_sp <- read.csv("../data/trichinella_spiralis_te.csv")
+df_trich_sp <- read.csv("../Illustrating_Workflow/Data/trichinella_spiralis_te.csv")
 df_trich_sp
 
 plot(sort(table(df_trich_sp$matching_class), decreasing = T)[1:10])
 
-df_trich_s9 <- read.csv("../data/GCA_001447505.1.csv")
+df_trich_s9 <- read.csv("../Illustrating_Workflow/Data/GCA_001447505.1.csv")
 df_trich_s9
 
 plot(sort(table(df_trich_s9$matching_class), decreasing = T)[1:10])
@@ -92,13 +98,58 @@ te_s9$matching_class |> unique()
 # defining retrotransposons
 retro_sp <- c("PLE/Naiad", "PLE", "LINE/CR1", "LTR/Pao", "LTR/Gypsy", "LINE/RTE-BovB",
               "SINE/tRNA-RTE", "LTR/Ngaro", "SINE/tRNA-Deu-L2", "LTR/DIRS")
+
+## Edit 1 
+### GEcomment on grouping the retrotransposons in trich spiralis. From Copilot, everything starting with LTR, LINE, SINE, PLE.
+
+grace_retro_sp <- te_sp |> 
+  filter(str_detect(matching_class, "^(LTR|LINE|SINE|PLE)"))
+
+###Check whether all retrotransposon classes manually identified by Ben are captured by the str_detect() filtering method.
+
+setdiff(retro_sp, unique(grace_retro_sp$matching_class))
+
+###Apply Ben's original classification criteria to the TE dataset. This selects observations whose matching_class appears in retro_s9.
+
+comp_retro_sp <- te_sp |> 
+  filter(matching_class %in% retro_sp)
+
+# Count the observations selected using Ben's original method.
+nrow(comp_retro_sp)
+
+### Count the observations selected using the str_detect() method. Comparing these counts helps establish whether both approaches retain the same number of observations.
+nrow(grace_retro_sp)
+
 retro_s9 <- c("LTR/Gypsy", "PLE", "PLE/Naiad", "LINE/CR1", "LTR/Pao", "LTR/Ngaro",
               "SINE/tRNA-Deu-L2", "SINE/tRNA-RTE", "LINE/RTE-BovB", "LINE")
+
+### GEcomment on grouping the retrotransposons in S9 genotype. From Copilot, everything starting with LTR, LINE, SINE, PLE.
+
+grace_retro_s9 <- te_s9 |> 
+  filter(str_detect(matching_class, "^(LTR|LINE|SINE|PLE)"))
+
+
+###Check whether all retrotransposon classes manually identified by Ben are captured by the str_detect() filtering method.
+
+setdiff(retro_s9, unique(grace_retro_s9$matching_class))
+
+###Apply Ben's original classification criteria to the TE dataset. This selects observations whose matching_class appears in retro_s9.
+
+comp_retro_s9 <- te_s9 |> 
+  filter(matching_class %in% retro_s9)
+
+# Count the observations selected using Ben's original method.
+nrow(comp_retro_s9)
+
+### Count the observations selected using the str_detect() method. Comparing these counts helps establish whether both approaches retain the same number of observations.
+nrow(grace_retro_s9)
+
+## Edit 1 ends 
 
 new_sp <- df_trich_sp |> 
   filter(matching_class %notin% non_te_sp) |>
   mutate(class_te = if_else(matching_class %in% retro_sp, "retrotrans", "DNAtrans")) 
-new_sp |>
+new_sp |> View()
   ggplot(aes( x = perc_del, y = perc_div, colour = class_te)) +
   geom_point() +
   geom_smooth()
@@ -110,6 +161,19 @@ new_s9 |>
   ggplot(aes( x = perc_del, y = perc_div, colour = class_te)) +
   geom_point() +
   geom_smooth()
+
+### Edit 2
+### Classifying retrotransposons and DNA transposons using a reusable function ----
+# A reusable function is introduced to apply the same TE classification procedure across multiple datasets. This reduces repetitive code, promotes consistency, and makes the classification process easier to maintain when additional datasets are introduced.
+
+classify_te <- function(data) {
+  data |> mutate(grace_class_te = if_else (str_detect(matching_class, "^(LTR|LINE|SINE|PLE)"), "retrotrans", "DNAtrans")) }
+
+grace_new_sp <- classify_te(te_sp)
+
+grace_new_s9 <- classify_te(te_s9)
+
+## Edit 2 ends
 
 # do TE families evolve differently
 # compare  perc del vs perc div of DNA trans between species
@@ -177,9 +241,9 @@ df_common_te |>
 
 # Loading datasets
 
-df_trichinella_sp <- read.csv("../data/trichinella_spiralis_te.csv")
+df_trichinella_sp <- read.csv("../Illustrating_Workflow/Data/trichinella_spiralis_te.csv")
 
-df_trichinella_t9 <- read.csv("../data/GCA_001447505.1.csv")
+df_trichinella_t9 <- read.csv("../Illustrating_Workflow/Data/GCA_001447505.1.csv")
 
 
 # Getting to know about the datasets
@@ -227,7 +291,7 @@ df_t9_te <- df_t9_te |>
 
 # Combining datasets
 
-df_all_tes <- bind_rows(df_sp_te, df_t9_te)
+df_all_tes <- bind_rows(df_sp_te, df_t9_te) 
 
 
 # Checking TE annotation counts
@@ -263,6 +327,23 @@ te_composition |>
        y = "Proportion of TE Annotations",
        colour = "Dataset")
 
+### Edit 3
+## Visualizing TE family distribution across datasets using horizontal bar char.
+
+te_composition |> 
+  ggplot(aes(x = reorder(matching_class, proportion), 
+             y = proportion,
+             fill = dataset)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(title = "TE FAmily Composition Across Datasets",
+       x = "TE Family/Class",
+       y = "Proportion of TE Annotations",
+       fill = "Dataset") +
+  theme_minimal()
+
+## Edit 3 ends 
+
 # Ranking TE families by abundance
 
 te_composition |>
@@ -286,3 +367,4 @@ te_composition |>
   tail(5) |>
   summarise(top_five_percentage = sum(percentage))
 # Gives us the combined percentage of top five, %91.7
+
